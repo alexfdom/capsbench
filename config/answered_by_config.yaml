@@ -1,0 +1,51 @@
+---
+models:
+  openai:
+    types:
+      gpt-4o-2024-08-06:
+        name: "gpt-4o-2024-08-06"
+        temperature: 0.0
+        token_limit: 16384
+
+prompt_accuracy_template: |
+  You are provided with a **candidate caption** and a set of **questions** along with their **ground truth answers** as metadata.
+
+  Here is the candidate caption to check for errors.
+  Candidate Caption:
+  {candidate_caption}
+
+  Ground truth answers:
+  {ground_truth}
+
+  Your tasks are as follows:
+
+  1. **Answer Each Question:**
+
+    - For each question, respond with one of the following options based solely on the information present in the candidate caption:
+      - **"yes"** if the answer is affirmative.
+      - **"no"** if the answer is negative.
+      - **"n/a"** (not applicable) if the information required to answer the question is not available in the caption.
+    - **Do not** provide any explanations or additional information—only the specified answer.
+
+  2. **Calculate Score:**
+
+    - Compare your answers to the **ground truth answers answers** provided.
+
+    - Calculate the score using the formula:
+
+      Score=(Number of Correct Answers)/(Total Number of Questions)×100
+
+  **Guidelines:**
+
+  - **Focus Solely on the Caption:** Base your answers only on the content of the candidate caption. Do not infer or use external knowledge.
+  - **Maintain Consistency:** Use only "yes," "no," or "n/a" as your responses.
+  - **Be Concise:** Avoid any unnecessary text or explanations.
+  - Check your responses for accuracy before submitting. Please count it as correct if the answer matches the ground truth.
+
+
+prompt_evaluation_template: 
+  openai: |
+    Focus solely on the text, extract the score:
+    {openai_answers}
+
+    Please provide your response in JSON format with 'score' and 'reason'.
