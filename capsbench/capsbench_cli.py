@@ -488,6 +488,8 @@ def process_evaluation(
         progress_callback
     )
 
+def main():
+    app()
 
 if __name__ == "__main__":
-    app()
+    main()
