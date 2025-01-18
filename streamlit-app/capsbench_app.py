@@ -4,14 +4,13 @@ from capsbench.capsbench_cli import process_evaluation_logic
 from capsbench.token_metrics import token_metrics
 import polars as pl
 
-# Run the Streamlit app with the following command:
-# python -m streamlit run streamlit-app/capsbench_app.py --server.maxUploadSize=500
 
 st.set_page_config(
     page_title="CapsBench Evaluation Framework",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
 
 def local_css():
     st.markdown(
@@ -125,33 +124,38 @@ local_css()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+
 def toggle_description():
     st.session_state.show_description = not st.session_state.show_description
 
-def display_metrics(result, baseline_key_metrics):
-    st.subheader("🖼️📃 → 📊 CapsBench Accuracy")
-    col1, _ = st.columns([1,3])
+
+def display_metrics(result, baseline_key_metrics, caption_column):
+    st.subheader("🖼️📃 → 📊 CapsBench")
+    col1, _ = st.columns([1, 3])
 
     cas_mean = result["score"].mean()
     baseline_cas_mean = baseline_key_metrics.get("CapsBench Accuracy", 0.0)
     col1.metric(
-        label="CapsBench Accuracy (%)",
+        label=f"CapsBench Accuracy (%) for {caption_column}",
         value=f"{cas_mean:.2f}",
         delta=f"{cas_mean - baseline_cas_mean:.2f}%",
     )
+
 
 def display_token_metrics(summary_metrics, baseline_token_metrics):
     st.subheader("📝 Token Metrics")
     col1, col2 = st.columns(2)
 
     avg_caption_length = summary_metrics["Value"][0]
-    baseline_avg_caption_length = baseline_token_metrics.get("Average Token Length per Caption", 0.0)
+    baseline_avg_caption_length = baseline_token_metrics.get(
+        "Average Token Length per Caption", 0.0
+    )
     col1.metric(
         label="Average Token Length",
         value=f"{avg_caption_length:.2f}",
         delta=f"{avg_caption_length - baseline_avg_caption_length:.2f}",
     )
-    
+
     vocabulary_size = summary_metrics["Value"][1]
     baseline_vocabulary_size = baseline_token_metrics.get("Vocabulary Size", 0.0)
     col2.metric(
@@ -160,10 +164,19 @@ def display_token_metrics(summary_metrics, baseline_token_metrics):
         delta=f"{vocabulary_size - baseline_vocabulary_size:.2f}",
     )
 
+
 # @st.cache_data(show_spinner=False)
 def run_evaluation_logic(
     _progress_callback,
-    input_file, img_bytes_column, caption_column, questions_column, start, end, step, openai_api_key, output_file
+    input_file,
+    img_bytes_column,
+    caption_column,
+    questions_column,
+    start,
+    end,
+    step,
+    openai_api_key,
+    output_file,
 ):
     if _progress_callback:
         _progress_callback(0, 100)
@@ -180,14 +193,21 @@ def run_evaluation_logic(
         progress_callback=_progress_callback,
     )
 
+
 def main():
     st.title("🖼️📃 → 📊 CapsBench Benchmark")
-    st.write("A Benchmark for evaluating the accuracy of synthetic captions against the CapsBench dataset.")
+    st.write(
+        "A Benchmark for evaluating the accuracy of synthetic captions against the CapsBench dataset."
+    )
 
     with st.sidebar:
         st.header("🔐 API Credentials")
         st.write("Enter or load your OpenAI API Key for evaluation:")
-        openai_key = st.text_input("Enter OpenAI API Key:", type="password", help="Your OpenAI API key is required for LLM-based reasoning.")
+        openai_key = st.text_input(
+            "Enter OpenAI API Key:",
+            type="password",
+            help="Your OpenAI API key is required for LLM-based reasoning.",
+        )
         if openai_key:
             st.success("API key set successfully!")
             st.session_state["openai_key"] = openai_key
@@ -202,7 +222,9 @@ def main():
 
         # Baseline Metrics Configuration
         with st.expander("📊 Baseline Metrics Configuration", expanded=False):
-            st.write("Set baseline values to compare your evaluation results against these reference points.")
+            st.write(
+                "Set baseline values to compare your evaluation results against these reference points."
+            )
             # CapsBench Baseline
             st.subheader("🖼️📃 → 📊 CapsBench Accuracy Baseline")
             baseline_cas = st.number_input(
@@ -241,8 +263,12 @@ def main():
             }
 
         st.session_state.baseline_key_metrics["CapsBench Accuracy"] = baseline_cas
-        st.session_state.baseline_token_metrics["Average Token Length per Caption"] = baseline_avg_caption_length
-        st.session_state.baseline_token_metrics["Vocabulary Size"] = baseline_vocabulary_size
+        st.session_state.baseline_token_metrics["Average Token Length per Caption"] = (
+            baseline_avg_caption_length
+        )
+        st.session_state.baseline_token_metrics["Vocabulary Size"] = (
+            baseline_vocabulary_size
+        )
 
     st.markdown("---")
 
@@ -263,15 +289,21 @@ def main():
                 \\text{Score} = \left( \\frac{\\text{Number of Correct Answers}}{\\text{Total Number of Questions}} \\right) \\times 100
                 $$
             
-            [View an Example DataFrame Output in .md format.](https://github.com/alexferdg/capsbench/blob/main/results/pg-captioner/results_gpt-4o-2024-08-06_pg-captioner_iter_1_.md)
+            [View an Example DataFrame Output in .md format.](https://github.com/alexfdom/capsbench/blob/main/results/pg-captioner/results_gpt-4o-2024-08-06_pg-captioner_iter_1_.md)
             """
         )
 
     st.header("📤 Upload the CapsBench Dataset")
-    st.write("You can download `.parquet` or `.feather` files from [HuggingFace/playgroundai/CapsBench](https://huggingface.co/datasets/playgroundai/CapsBench).")
-    st.info("**Recommendation:** Perform the evaluation at least three times and average the results for stable findings.")
+    st.write(
+        "You can download `.parquet` or `.feather` files from [HuggingFace/playgroundai/CapsBench](https://huggingface.co/datasets/playgroundai/CapsBench)."
+    )
+    st.info(
+        "**Recommendation:** Perform the evaluation at least three times and average the results for stable findings."
+    )
 
-    uploaded_file = st.file_uploader("Choose a Parquet or Feather file", type=["parquet", "feather"])
+    uploaded_file = st.file_uploader(
+        "Choose a Parquet or Feather file", type=["parquet", "feather"]
+    )
 
     if uploaded_file is not None:
         tmp_dir = "temp"
@@ -298,15 +330,19 @@ def main():
                     img_bytes_column = st.session_state.get("img_bytes_column", "image")
 
                     columns_info = []
-                    num_rows_to_sample = 3  
+                    num_rows_to_sample = 3
                     for col in df.columns:
                         dtype = str(df[col].dtype)
                         if col == img_bytes_column:
                             sample_val = f"({dtype}) Image bytes not displayed"
                         else:
-                            sample = df[col].head(num_rows_to_sample).to_pandas().tolist()
+                            sample = (
+                                df[col].head(num_rows_to_sample).to_pandas().tolist()
+                            )
                             sample_val = ", ".join([str(val) for val in sample])
-                        columns_info.append({"Column": col, "Type": dtype, "Sample Values": sample_val})
+                        columns_info.append(
+                            {"Column": col, "Type": dtype, "Sample Values": sample_val}
+                        )
 
                     st.dataframe(pl.DataFrame(columns_info), width=4500)
         st.markdown("---")
@@ -316,19 +352,49 @@ def main():
         with st.expander("Advanced Configuration", expanded=True):
             col1, col2 = st.columns(2)
             with col1:
-                img_bytes_column = st.text_input("Image Bytes Column", value="image", help="Column containing image bytes in the uploaded file.")
-                caption_column = st.text_input("Caption Column", value="pg-captioner", help="Column of synthetic captions to evaluate (e.g., pg-captioner, sonnet, gpt-4o or any model column you add to the dataset).")
-                output_file = st.text_input("Output File Path", value="results.parquet", help="Local path to save the evaluation results.")
+                img_bytes_column = st.text_input(
+                    "Image Bytes Column",
+                    value="image",
+                    help="Column containing image bytes in the uploaded file.",
+                )
+                caption_column = st.text_input(
+                    "Caption Column",
+                    value="pg-captioner",
+                    help="Column of synthetic captions to evaluate (e.g., pg-captioner, sonnet, gpt-4o or any model column you add to the dataset).",
+                )
+                output_file = st.text_input(
+                    "Output File Path",
+                    value="results.parquet",
+                    help="Local path to save the evaluation results.",
+                )
 
             with col2:
                 questions_column = st.text_input(
                     "Questions Column",
                     value="questions",
-                    help="Column containing questions and reference ground truth answers."
+                    help="Column containing questions and reference ground truth answers.",
                 )
-                start = st.number_input("Start Index", min_value=0, value=0, step=1, help="Start index for subset evaluation.")
-                end = st.number_input("End Index (not inclusive)", min_value=1, value=200, step=1, help="End index for subset evaluation.")
-                step = st.number_input("Step Size", min_value=1, value=1, step=1, help="Evaluate every nth sample (subsampling).")
+                start = st.number_input(
+                    "Start Index",
+                    min_value=0,
+                    value=0,
+                    step=1,
+                    help="Start index for subset evaluation.",
+                )
+                end = st.number_input(
+                    "End Index (not inclusive)",
+                    min_value=1,
+                    value=200,
+                    step=1,
+                    help="End index for subset evaluation.",
+                )
+                step = st.number_input(
+                    "Step Size",
+                    min_value=1,
+                    value=1,
+                    step=1,
+                    help="Evaluate every nth sample (subsampling).",
+                )
 
         if st.button("🚀 Process File"):
             if "openai_key" not in st.session_state and OPENAI_API_KEY is None:
@@ -356,47 +422,71 @@ def main():
                             start=start,
                             end=end,
                             step=step,
-                            openai_api_key=st.session_state.get("openai_key") or OPENAI_API_KEY,
+                            openai_api_key=st.session_state.get("openai_key")
+                            or OPENAI_API_KEY,
                             output_file=output_file,
                         )
 
-                    
                         if result is not None:
-                            st.success(f"✅ Processing complete! Results saved to '{output_file}'.")
+                            st.success(
+                                f"✅ Processing complete! Results saved to '{output_file}'."
+                            )
 
                             with st.container():
                                 progress_bar.progress(90)
-                                # CapsBench Accuracy 
-                                display_metrics(result, st.session_state.baseline_key_metrics)
+                                # CapsBench Accuracy
+                                display_metrics(
+                                    result,
+                                    st.session_state.baseline_key_metrics,
+                                    caption_column,
+                                )
 
                                 st.subheader("📋 Snapshot of Evaluation Results")
                                 st.write("Below are the first 10 evaluated entries:")
-                                st.dataframe(result.drop(["image_bytes", "reasons"]).head(10))
+                                st.dataframe(
+                                    result.drop(["image_bytes", "reasons"]).head(10)
+                                )
 
                                 # Token Metrics
                                 summary_metrics, _ = token_metrics(result)
-                                display_token_metrics(summary_metrics, st.session_state.baseline_token_metrics)
-                                
+                                display_token_metrics(
+                                    summary_metrics,
+                                    st.session_state.baseline_token_metrics,
+                                )
+
                                 st.markdown("---")
                                 ERROR_MESSAGE = "Error generating."
-                                total_success = len([answer for answer in result["openai_answers"] if answer != ERROR_MESSAGE])
+                                total_success = len(
+                                    [
+                                        answer
+                                        for answer in result["openai_answers"]
+                                        if answer != ERROR_MESSAGE
+                                    ]
+                                )
                                 message = f"**Total Number of entries successfully processed** for CapsBench Accuracy: **{total_success}**"
-                                
+
                                 if total_success == 0:
-                                    st.error("❌ No entries were successfully processed. Check your API key or parameters and try again.")
+                                    st.error(
+                                        "❌ No entries were successfully processed. Check your API key or parameters and try again."
+                                    )
                                 else:
                                     st.markdown(message)
 
                                 progress_bar.progress(100)
                                 st.success("✅ Evaluation completed successfully.")
                         else:
-                            st.error("❌ No valid results were produced. Check input parameters and try again.")
+                            st.error(
+                                "❌ No valid results were produced. Check input parameters and try again."
+                            )
 
                     except Exception as e:
                         st.error(f"❌ Failed to process the file: {e}")
 
     st.markdown("---")
-    st.markdown("Developed by [alexferdg](https://github.com/alexferdg) | Enhanced by the community")
+    st.markdown(
+        "Developed by [alexfdom](https://github.com/alexfdom) | Enhanced by the community"
+    )
+
 
 if __name__ == "__main__":
     main()
