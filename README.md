@@ -44,7 +44,7 @@ python dataset/download_capsbench_dataset.py
 <details>
   <summary>APP Overview</summary>
 
-  ![img](./streamlit-app/CapsBench_Evaluation_Framework.png)
+  ![img](./streamlit-app/CapsBench_app_overview.png)
 
 </details>
 
